@@ -1,8 +1,9 @@
 from database.db_connect import db_connection
-from database.db_query import query_table
+from database.query import query_table
 from data.generate_data import generate_tables
 from config.config import dbconfig
-from database.create_table import create_db_table, populate_tables
+from database.create_table import create_db_table
+from database.populate_table import populate_tables
 
 
 def main(num_records): 
@@ -20,7 +21,7 @@ def main(num_records):
         
         # Establish database connection
         connection, engine = db_connection(dbconfig['USERNAME'], dbconfig['PASSWORD'], 
-                    dbconfig['HOST'], 'online_retail')
+                    dbconfig['HOST'], 'retail_store')
         
         # Create database tables
         create_db_table(engine)
@@ -28,13 +29,45 @@ def main(num_records):
         populate_tables(engine,  fact_dicts, product_dicts, customer_dicts, time_dicts, order_dicts)
         
         # Execute query statement list
-        query_statements = [ "select p.name, sum(f.quantity) as total_quanity  from order_fact_table f inner join product_dimension p \
-                        on f.product_id=p.product_id where extract(year from f.order_date) < 2020 group by p.name" , 
-                           "select avg(amount) as avg_amount from order_fact_table group by extract(month from order_date)", 
-                           "select c.location,  sum(f.quantity) as total_quanity from order_fact_table f inner join customer_dimension c \
-                               on f.customer_id=c.customer_id group by c.location", 
-                            "select p.name, max(f.amount) as max_revenue from order_fact_table f inner join product_dimension p \
-                                on f.product_id=p.product_id group by p.name"]
+        query_statements = [ # Calculating total sales revenue by year, quarter, and month
+                            "SELECT d.year, d.quarter, d.month,  sum(s.sales_revenue) as total_sales_rev  \
+                                from sales_table s \
+                                INNER JOINdate_dimension d ON d.date_id=s.date_id \
+                                GROUP BY d.year, d.quarter, d.month" ,
+                             
+                            # Analyzing sales performance by product category and store location
+                           "SELECT p.category, sd.location, sum(s.sales_revenue) as total_sales_rev \
+                                from sales_table s \
+                                INNER JOINproduct_dimension p ON p.product_id=s.product_id \
+                                INNER JOINstore_dimension sd ON sd.store_id=s.store_id \
+                                GROUP BY p.category, sd.location", 
+                            
+                            #  Identifying top-5-selling product category and least-5-selling product catgeory
+                            "(SELECT p.category, sum(s.sales_revenue) as total_sales_rev \
+                                from sales_table s \
+                                INNER JOINproduct_dimension p ON p.product_id=s.product_id \
+                                GROUP BY p.category\
+                                order by total_sales_rev DESC \
+                                limit 5) \
+                            Union \
+                            (SELECT p.category, sum(s.sales_revenue) as total_sales_rev \
+                                from sales_table s \
+                                INNER JOINproduct_dimension p ON p.product_id=s.product_id \
+                                GROUP BY p.category\
+                                order by total_sales_rev ASC \
+                                limit 5) \
+                            order by total_sales_rev DESC"
+                            
+                            # Comparing sales performance across different regions or stores
+                            "SELECT store_id, sum(s.sales_revenue) as total_sales_rev \
+                                from sales_table \
+                                GROUP BY store_id"
+
+                            # Evaluating promotion campaign on sales  
+                           "SELECT p.category, avg(s.sales_revenue) as avg_sales_rev \
+                               FROM sales_table s \
+                                INNER JOIN promotion_dimension p ON p.promotion_id=s.promotion_id \
+                                GROUP BY p.category"]
 
         for statement in query_statements: 
             query_result = query_table(statement, connection)
