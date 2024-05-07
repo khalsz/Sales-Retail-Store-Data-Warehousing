@@ -9,6 +9,9 @@ fake = Faker('en_US')
 
 
 def product_data(): 
+    
+    '''Generate synthetic data for product table'''
+    
     name = fake.word()
     category = fake.word(ext_word_list=["Electronics", "Clothing", "Home Appliances"])
     price = random.randrange(1000,5000, 500)
@@ -24,6 +27,9 @@ def product_data():
     return product
 
 def store_data(): 
+    
+    '''Generate synthetic data for store table'''
+    
     store = {
         'store_id': fake.random_number(digits=5),
         'name': fake.name(),
@@ -31,6 +37,9 @@ def store_data():
     }
     return store
 def time_data(date, sn): 
+    
+    '''Generate synthetic data for date table'''
+    
     times = {
         'date_id': sn,
         'date': date, 
@@ -41,27 +50,31 @@ def time_data(date, sn):
     return times
 
 def promotion_data(): 
-    types = fake.word(ext_word_list=["E-marketing", "rebanding", "influencer marketing", "affiliate marketing"])
+    
+    '''Generate synthetic data for promotion table'''
+    
+    types = fake.word(ext_word_list=["E-marketing", "rebanding", "influencer marketing", "affiliate marketing", "None"])
     # generating prmotion campaign date whcih is different from others date. 
     date =  dt.strptime(fake.date(pattern="%Y-%m-%d", 
                 end_datetime=datetime.date(2024, 4,1)), 
                 "%Y-%m-%d").date()
     order = {
-        'promition_id': fake.random_number(digits=5), 
+        'promotion_id': fake.random_number(digits=5), 
         'type': types, 
         'date': date, 
-        'cost': random.randrange(3000,10000, 500), 
-        'company_name': fake.name()
+        'cost': random.randrange(3000,10000, 500)
     }
     return order
     
 def sales_data(product_data, store_data, date, promotion_data, time_data): 
+    
+    '''Generate synthetic data for sales table'''
 
     fact = {
         'sales_id': fake.random_number(digits=6),
         'product_id': product_data['product_id'], 
         'store_id': store_data['store_id'],
-        'promotion_id': promotion_data['promition_id'],
+        'promotion_id': promotion_data['promotion_id'],
         'date_id': time_data['date_id'],
         'order_date': date, 
         'quantity': fake.random_number(digits=3), 
@@ -73,7 +86,7 @@ def sales_data(product_data, store_data, date, promotion_data, time_data):
 
 def generate_tables(records): 
     """
-    Generate synthetic data tables.
+    Generate synthetic data for different tables.
 
     Args:
         records (int): Number of records to generate for each table.
@@ -95,8 +108,8 @@ def generate_tables(records):
                             end_datetime=datetime.date(2024, 4,1)), 
                            "%Y-%m-%d").date()
         # Generate data for each table
-        product = promotion_data()
-        store = store_data(date)
+        product = product_data()
+        store = store_data()
         promotion = promotion_data()
         times = time_data(date=date, sn=i)
         sales = sales_data(product, store, date, promotion, times)

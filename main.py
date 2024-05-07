@@ -16,7 +16,7 @@ def main(num_records):
     """
     try:
         # Generate data tables
-        fact_dicts, product_dicts, customer_dicts, time_dicts, order_dicts = generate_tables(records=num_records)
+        fact_dicts, product_dicts, store_dicts, time_dicts, promotion_dicts = generate_tables(records=num_records)
         
         
         # Establish database connection
@@ -26,48 +26,48 @@ def main(num_records):
         # Create database tables
         create_db_table(engine)
         
-        populate_tables(engine,  fact_dicts, product_dicts, customer_dicts, time_dicts, order_dicts)
+        populate_tables(engine,  fact_dicts, product_dicts, store_dicts, time_dicts, promotion_dicts)
         
         # Execute query statement list
         query_statements = [ # Calculating total sales revenue by year, quarter, and month
                             "SELECT d.year, d.quarter, d.month,  sum(s.sales_revenue) as total_sales_rev  \
                                 from sales_table s \
-                                INNER JOINdate_dimension d ON d.date_id=s.date_id \
+                                INNER JOIN date_dimension d ON d.date_id=s.date_id \
                                 GROUP BY d.year, d.quarter, d.month" ,
                              
                             # Analyzing sales performance by product category and store location
                            "SELECT p.category, sd.location, sum(s.sales_revenue) as total_sales_rev \
                                 from sales_table s \
-                                INNER JOINproduct_dimension p ON p.product_id=s.product_id \
-                                INNER JOINstore_dimension sd ON sd.store_id=s.store_id \
+                                INNER JOIN product_dimension p ON p.product_id=s.product_id \
+                                INNER JOIN store_dimension sd ON sd.store_id=s.store_id \
                                 GROUP BY p.category, sd.location", 
                             
                             #  Identifying top-5-selling product category and least-5-selling product catgeory
                             "(SELECT p.category, sum(s.sales_revenue) as total_sales_rev \
                                 from sales_table s \
-                                INNER JOINproduct_dimension p ON p.product_id=s.product_id \
+                                INNER JOIN product_dimension p ON p.product_id=s.product_id \
                                 GROUP BY p.category\
                                 order by total_sales_rev DESC \
                                 limit 5) \
                             Union \
                             (SELECT p.category, sum(s.sales_revenue) as total_sales_rev \
                                 from sales_table s \
-                                INNER JOINproduct_dimension p ON p.product_id=s.product_id \
+                                INNER JOIN product_dimension p ON p.product_id=s.product_id \
                                 GROUP BY p.category\
                                 order by total_sales_rev ASC \
                                 limit 5) \
-                            order by total_sales_rev DESC"
+                            order by total_sales_rev DESC",
                             
                             # Comparing sales performance across different regions or stores
-                            "SELECT store_id, sum(s.sales_revenue) as total_sales_rev \
+                            "SELECT store_id, sum(sales_revenue) as total_sales_rev \
                                 from sales_table \
-                                GROUP BY store_id"
+                                GROUP BY store_id",
 
                             # Evaluating promotion campaign on sales  
-                           "SELECT p.category, avg(s.sales_revenue) as avg_sales_rev \
+                           "SELECT p.type, avg(s.sales_revenue) as avg_sales_rev \
                                FROM sales_table s \
                                 INNER JOIN promotion_dimension p ON p.promotion_id=s.promotion_id \
-                                GROUP BY p.category"]
+                                GROUP BY p.type"]
 
         for statement in query_statements: 
             query_result = query_table(statement, connection)
