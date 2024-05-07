@@ -3,6 +3,7 @@ from faker import Faker
 import datetime
 from datetime import datetime as dt
 import random
+import pandas as pd
 
 fake = Faker('en_US')
 
@@ -34,13 +35,14 @@ def time_data(date, sn):
         'date_id': sn,
         'date': date, 
         'month': date.month,
-        'quarter': date.quarter,
+        'quarter': pd.Timestamp(date).quarter,
         'year': date.year
     }
     return times
 
 def promotion_data(): 
     types = fake.word(ext_word_list=["E-marketing", "rebanding", "influencer marketing", "affiliate marketing"])
+    # generating prmotion campaign date whcih is different from others date. 
     date =  dt.strptime(fake.date(pattern="%Y-%m-%d", 
                 end_datetime=datetime.date(2024, 4,1)), 
                 "%Y-%m-%d").date()
@@ -63,7 +65,7 @@ def sales_data(product_data, store_data, date, promotion_data, time_data):
         'date_id': time_data['date_id'],
         'order_date': date, 
         'quantity': fake.random_number(digits=3), 
-        'total_sales': fake.random_number(digits=3)
+        'sales_revenue': fake.random_number(digits=5)
     }
     return fact
 
